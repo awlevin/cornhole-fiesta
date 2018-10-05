@@ -1,0 +1,40 @@
+
+
+<!DOCTYPE html>
+
+<html>
+<head>
+
+<script type="text/javascript" src="jquery-1.6.2.min.js"></script>
+<script type="text/javascript" src="jquery.bracket.min.js"></script>
+<link rel="stylesheet" type="text/css" href="jquery.bracket.min.css" />
+
+<script>
+var singleElimination = {
+	"teams": [
+		["Team 1", "Team 2"],
+		["Team 3", "Team 4"]
+	],
+	"results": [	// Results entries are scores, internal logic determines who to display as winners
+		[[1,12], [3,4]],       /* first round */
+    	[[8,6], [2,1]]        /* second round */
+	]
+  
+}
+
+$(document).ready(function() {
+//	$("h1").click(function(){ $(this).hide();});
+	$('.bracket').bracket({init: singleElimination})
+})
+
+</script>
+
+</head>
+
+<body>
+
+<h1> H1 Heading! </h1>
+<div class="bracket" style="height: 130px;"> </div>
+
+</body>
+</html>
