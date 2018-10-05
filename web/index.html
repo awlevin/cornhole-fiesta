@@ -1,14 +1,18 @@
-
-
 <!DOCTYPE html>
 
 <html>
 <head>
 
-<script type="text/javascript" src="jquery-1.6.2.min.js"></script>
-<script type="text/javascript" src="jquery.bracket.min.js"></script>
+<!-- Minfiles -->
+<script type="text/javascript" src="min/jquery-1.6.2.min.js"></script>
+<script type="text/javascript" src="min/jquery.bracket.min.js"></script>
+<script type="text/javascript" src="min/instascan.min.js"></script>
+
+<!-- Stylesheets -->
 <link rel="stylesheet" type="text/css" href="jquery.bracket.min.css" />
 
+
+<!-- START TOURNAMENT BRACKET JAVASCRIPT -->
 <script>
 var singleElimination = {
 	"teams": [
@@ -19,22 +23,27 @@ var singleElimination = {
 		[[1,12], [3,4]],       /* first round */
     	[[8,6], [2,1]]        /* second round */
 	]
-  
 }
 
 $(document).ready(function() {
-//	$("h1").click(function(){ $(this).hide();});
 	$('.bracket').bracket({init: singleElimination})
 })
-
 </script>
+<!-- END TOURNAMENT BRACKET JAVASCRIPT -->
 
 </head>
-
 <body>
 
-<h1> H1 Heading! </h1>
+<h1> Cornhole Fiesta! </h1>
+<p id="qr-tag"> QR READER: </p>
+
+<video id="preview"></video>
+
+<!-- START TOURNAMENT BRACKET DIV -->
 <div class="bracket" style="height: 130px;"> </div>
+<!-- END TOUrNAMENT BRACKET DIV -->
+
+<script type="text/javascript" src="js/qr.js"></script>
 
 </body>
 </html>
