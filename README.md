@@ -14,3 +14,5 @@ A webpage is under development and can be found in the `web/` directory.
 [jQuery Bracket](http://www.aropupu.fi/bracket/)
 
 [instascan](https://github.com/schmich/instascan)
+
+[ngrok](https://ngrok.com/download)
