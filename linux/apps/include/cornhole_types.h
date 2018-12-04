@@ -1,0 +1,7 @@
+
+#ifndef __CORNHOLE_TYPES_H__
+#define __CORNHOLE_TYPES_H__
+
+typedef enum corn_op_t {TEAM1_HOLE, TEAM2_HOLE, PEDAL_SINGLE, PEDAL_DOUBLE, PEDAL_LONG} CORN_OP;
+
+#endif
