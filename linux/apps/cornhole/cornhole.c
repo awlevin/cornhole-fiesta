@@ -11,6 +11,8 @@
 
 #include "../include/cornhole.h"
 
+#define DEBUG_ON
+
 //*****************************************************************************
 //*****************************************************************************
 
@@ -23,13 +25,19 @@ int main(int argc, char **argv)
 		op = read_xbee();
 		printf("op: %d\n", op);
 		if (op == TEAM1_HOLE) {
-			printf("score1: %d", score1);
-			score1 = (score1 == 10) ? -1 : score1+1;
+			score1++;
+			score1 = (score1 == 10) ? -1 : score1;
 			led_7seg_write(0, score1);
+#ifdef DEBUG_ON
+			printf("score1: %d\n", score1);
+#endif
 		} else if (op == TEAM2_HOLE) {
-			printf("score2: %d", score2);
-			score2 = (score2 == 10) ? -1 : score2+1;
+			score2++;
+			score2 = (score2 == 10) ? -1 : score2;
 			led_7seg_write(2, score2);
+#ifdef DEBUG_ON
+			printf("score2: %d\n", score2);
+#endif
 		}
 	}
 
