@@ -8,6 +8,19 @@
 #include <termios.h>
 #include <unistd.h>
 
+char *portname = "/dev/ttyS1";
+int fd;
+
+// returns a file descriptor
+int open_xbee() {
+	fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+	return fd;
+}
+
+int close_xbee() {
+	return close(fd);
+}
+
 int set_interface_attribs(int fd, int speed)
 {
     struct termios tty;
@@ -61,11 +74,8 @@ void set_mincount(int fd, int mcount)
 
 CORN_OP read_xbee() {
 	
-    char *portname = "/dev/ttyS1";
-    int fd;
     int wlen;
 
-    fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {
         printf("Error opening %s: %s\n", portname, strerror(errno));
         return -1;
