@@ -1,7 +1,7 @@
 FILENAME=cornhole
 CC=arm-linux-gnueabihf-gcc
 IDIR =../include
-CFLAGS=-I$(IDIR) -g
+CFLAGS=-I$(IDIR) -g -lpthread
 LIBS=
 ODIR=../obj
 

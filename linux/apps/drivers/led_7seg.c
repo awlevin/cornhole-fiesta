@@ -35,7 +35,7 @@ int led_7seg_write(uint8_t seg_num, uint8_t value)
 	}
 	
 	// Turn off LED's or convert number we're writing to hex
-	hex_val = (value == 10) ? 0x00 : convert_val_to_7seg_hex(value);
+	hex_val = (value == 23) ? 0x00 : convert_val_to_7seg_hex(value);
 
 	char string_val[9];
 
