@@ -15,5 +15,7 @@ int close_xbee();
 int led_7seg_write_team(int team_num, int score);
 int init_game();
 void *blink_func();
+int edit_mode(CORN_OP op);
+int normal_mode(CORN_OP op);
 
 #endif

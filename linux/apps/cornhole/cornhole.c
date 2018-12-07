@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "../include/cornhole.h"
 
@@ -36,41 +37,9 @@ int main(int argc, char **argv)
 		printf("op: %d\n", op);
 	
 		if (curr_mode == MODE_EDIT) {
-			curr_team = (op == TEAM1_HOLE) ? 0 : (op == TEAM2_HOLE) ? 1 : 0;
-			curr_mode = (op == PEDAL_LONG) ? MODE_PLAY : curr_mode;
-			if (op == PEDAL_SINGLE) {
-				if (curr_team == 0) score0++;
-				else if (curr_team == 1) score1++;
-			}
-			if (op == PEDAL_DOUBLE) {
-				if (curr_team == 0) score0--;
-				else if (curr_team == 1) score1--;
-			}
-			continue;
-		}
-		
-		switch(op) {
-			case TEAM1_HOLE:
-				printf("TEAM1\n");
-				process_hole(op);
-				break;
-			case TEAM2_HOLE:
-				printf("TEAM2\n");
-				process_hole(op);
-				break;
-			case PEDAL_SINGLE:
-				printf("SNGLE\n");
-				break;
-			case PEDAL_DOUBLE:
-				printf("DOUBL\n");
-				break;
-			case PEDAL_LONG:
-				printf("LONG\n");
-				curr_mode ^= 1;
-				break;
-			default: 
-				printf("%d", op);
-				break;
+			edit_mode(op);
+		} else if (curr_mode == MODE_PLAY) {
+			normal_mode(op);	
 		}
 	}
 
@@ -80,11 +49,63 @@ int main(int argc, char **argv)
   return 0;
 }
 
+// Handle operations in edit mode
+int edit_mode(CORN_OP op) {
+	
+	switch(op) {
+		case TEAM1_HOLE:
+			curr_team=0;
+			break;
+		case	TEAM2_HOLE:
+			curr_team=1;
+			break;
+		case	PEDAL_SINGLE:
+			if(curr_team==0) score0++;
+			else if(curr_team==1)	score1++;
+			break;
+		case PEDAL_DOUBLE:
+			if(curr_team==0) score0--;
+			else if(curr_team==1)	score1--;
+			break;
+		case	PEDAL_LONG:
+			curr_mode^=1; // toggle mode
+			break;
+	}
+}
+
+// Handle operations in normal mode
+int normal_mode(CORN_OP op) {
+	switch(op) {
+		case TEAM1_HOLE:
+			printf("TEAM1\n");
+			process_hole(op);
+			break;
+		case TEAM2_HOLE:
+			printf("TEAM2\n");
+			process_hole(op);
+			break;
+		case PEDAL_SINGLE:
+			printf("SNGLE\n");
+			break;
+		case PEDAL_DOUBLE:
+			printf("DOUBL\n");
+			break;
+		case PEDAL_LONG:
+			printf("LONG\n");
+			curr_mode ^= 1;
+			break;
+		default: 
+			printf("%d", op);
+			break;
+	}
+}
+
 int init_game() {
 	
 	// Write zeroes to scoreboard
-	led_7seg_write_team(0, 23);
-	led_7seg_write_team(1, 23);
+	led_7seg_write_team(0, 0);
+	usleep(1000);
+	led_7seg_write_team(1, 0);
 		
 	// Turn on thread to handle blinking during edit mode
 	pthread_create( &blink_thread, NULL, blink_func, NULL);
@@ -130,30 +151,31 @@ void *blink_func() {
 		int dig2_team0 = score0%10;
 		int dig1_team1 = score1/10;
 		int dig2_team1 = score1%10;
+		int blink_rate = 500000;
 
 		if (curr_team == 0) {
 			led_7seg_write(0, 23);
 			led_7seg_write(1, 23);
-			sleep(1);
+			usleep(blink_rate);
 			led_7seg_write(0, dig1_team0);
 			led_7seg_write(1, dig2_team0);
-			sleep(1);
+			usleep(blink_rate);
 		} 
 		else if (curr_team == 1) {
 			led_7seg_write(2, 23);
 			led_7seg_write(3, 23);
-			sleep(1);
+			usleep(blink_rate);
 			led_7seg_write(2, dig1_team1);
 			led_7seg_write(3, dig2_team1);
-			sleep(1);
+			usleep(blink_rate);
 		}
 	}
 }
 
 int led_7seg_write_team(int team_num, int score) {
 
-	int dig1 = (score == 23) ? 23 : score/10;
-	int dig2 = (score == 23) ? 23 : score%10;
+	int dig1 = score/10;
+	int dig2 = score%10;
 
 	if (team_num == 0) {
 		led_7seg_write(0, dig1);
