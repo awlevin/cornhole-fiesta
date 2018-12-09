@@ -6,7 +6,12 @@
 
 #define LED_7SEG_REG	"/sys/kernel/ece453/led_7seg"
 
-uint8_t convert_to_7seg_hex(int value);
-int led_7seg_write(int seg_num, int value);
+const uint8_t SEG_HEX_ARR[10] = {0xDE,0x06,0xBA,0xAE,0x66,0xEC,0xFC,0x86,0xFE,0xE6};
+
+int convert_val_to_7seg_hex(uint8_t value);
+int convert_7seg_hex_to_val(uint8_t hex); 
+
+int led_7seg_write(uint8_t seg_num, uint8_t value);
+int led_7seg_read(uint8_t seg_num);
 
 #endif

@@ -267,37 +267,42 @@ static ssize_t ece453_write_irq (
 /*****************************************************************************/
 
 // Returns the valid 7SEG register offset corresponding to the input seg_num
-/*static int get_7seg_reg_offset(int seg_num) {
+int get_7seg_reg_offset(int seg_num) {
 	switch (seg_num) {
 		case 0:
-			return 7SEG_SEG0_SER_OFF;
+			return LED_7SEG0_SER_OFF;
 		case 1:
-			return 7SEG_SEG1_SER_OFF;
+			return LED_7SEG1_SER_OFF;
 		case 2:
-			return 7SEG_SEG2_SER_OFF;
+			return LED_7SEG2_SER_OFF;
 		case 3:
-			return 7SEG_SEG3_SER_OFF;
+			return LED_7SEG3_SER_OFF;
 		default:
-			perror("invalid seg num");
-			return;
+			//TODO: print error?
+			return -1;
 	}
-}*/
+}
 
-/*static ssize_t read_7seg ( 
+static ssize_t led_7seg_read_func ( 
     struct kobject *kobj, 
     struct kobj_attribute *attr, 
     char *buf
     )
 {
-  int val, seg_reg_offset;
-	sscanf(buf, 
+	// Determine the 7seg to read
+	int val0, val1, val2, val3;
 
-	val = ioread32(base_addr + seg_reg_offset);
-  return sprintf(buf, "%08x\n", val);
-}*/
+	// Read from the 7seg and return the value we read
+	val0 = ioread8(base_addr + LED_7SEG0_SER_OFF);
+	val1 = ioread8(base_addr + LED_7SEG1_SER_OFF); 
+	val2 = ioread8(base_addr + LED_7SEG2_SER_OFF); 
+	val3 = ioread8(base_addr + LED_7SEG3_SER_OFF); 
+  return sprintf(buf, "%02x %02x %02x %02x\n", val0, val1, val2, val3);
+}
+
 
 // Input format: "<seg_num> <val>"
-static ssize_t led_7seg_write (
+static ssize_t led_7seg_write_func (
     struct kobject *kobj, 
     struct kobj_attribute *attr, 
     const char *buf, 
@@ -306,40 +311,22 @@ static ssize_t led_7seg_write (
 {
   int seg_num, val, seg_reg_offset;
 
-  sscanf(buf, "%x %02x", &seg_num, &val);
+	// Initialize these to -1 so we can tell if they are read properly
+	seg_num = -1;
+	seg_reg_offset = -1;
 
-	switch (seg_num) {
-		case 0:
-			seg_reg_offset = LED_7SEG0_SER_OFF;
-			break;
-		case 1:
-			seg_reg_offset = LED_7SEG1_SER_OFF;
-			break;
-		case 2:
-			seg_reg_offset = LED_7SEG2_SER_OFF;
-			break;
-		case 3:
-			seg_reg_offset = LED_7SEG3_SER_OFF;
-			break;
-		default:
-			//TODO: print error?
-			return -1;
-	}
+	// Determine the 7seg index to update
+	// TODO: dont think this works, should do better error handling
+	sscanf(buf, "%x %02x", &seg_num, &val);
+	if (seg_num < 0 || val < 0) 
+		return -1;
 
+	seg_reg_offset = get_7seg_reg_offset(seg_num);
+
+	// Write the value to the shift register AND THEN send the update signal
   iowrite8(val, base_addr + seg_reg_offset);
 	iowrite8(1, base_addr + LED_7SEG_SEND_DATA_OFF);
   return count;
-}
-
-static ssize_t led_7seg_update_write (
-    struct kobject *kobj, 
-    struct kobj_attribute *attr, 
-    const char *buf, 
-    size_t count
-    )
-{
-	iowrite8(1, base_addr + LED_7SEG_SEND_DATA_OFF);
-	return count;
 }
 
 /*****************************************************************************/
@@ -347,14 +334,12 @@ static ssize_t led_7seg_update_write (
 static ssize_t ece453_write_pid(struct kobject *kobj, struct kobj_attribute *attr,
                        const char *buf, size_t count)
 {
-    sscanf(buf, "%d", &pid);
+  sscanf(buf, "%d", &pid);
 
   dbg("pid %d\n",pid);
 
   return count;
 }
-    
-
 
 
 // The control and status register is read write, so we set the file permissions
@@ -384,10 +369,7 @@ static struct kobj_attribute irq_attribute =
 		__ATTR(irq, 0664, ece453_read_irq, ece453_write_irq);
 
 static struct kobj_attribute led_7seg_data_attribute =
-		__ATTR(led_7seg, 0664, NULL, led_7seg_write);
-
-static struct kobj_attribute led_7seg_update_attribute =
-		__ATTR(led_7seg_update, 0664, NULL, led_7seg_update_write);
+		__ATTR(led_7seg, 0664, led_7seg_read_func, led_7seg_write_func);
 
 /*****************************************************************************
  * ADD CODE                                                                  *
@@ -409,7 +391,6 @@ static struct attribute *attrs[] = {
 				&im_attribute.attr,
 				&irq_attribute.attr,
 				&led_7seg_data_attribute.attr,
-				&led_7seg_update_attribute.attr,
         NULL   /* need to NULL terminate the list of attributes */
 };
 
