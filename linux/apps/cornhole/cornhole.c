@@ -18,8 +18,9 @@
 #define DEBUG_ON
 
 CORN_OP op;
-volatile uint8_t score0, score1, round_score0, round_score1; 
 volatile int curr_team = 0;
+volatile uint8_t score0, score1, hole_score0, hole_score1, cv_score0, cv_score1;
+volatile int  net_cv_score;
 volatile int check_for_hole0=0;
 volatile int check_for_hole1=0;
 volatile int turn_count=0;
@@ -67,24 +68,24 @@ int exec_python() {
 		printf("file error");
 		return -1;
 	}
-
-	int team0_cv_score, team1_cv_score;
-	fscanf(fp, "%d %d", &team1_cv_score, &team0_cv_score);
-
-	printf("////////////\n team0 score: %d   team1 score: %d",team0_cv_score,team1_cv_score); 
+//	int team0_cv_score, team1_cv_score;
+	fscanf(fp, "%d %d", &cv_score0, &cv_score1);
+	printf("/////\n team0 CVscore: %d\nteam1 CVscore: %d",cv_score0,cv_score1); 
+	net_cv_score= cv_score0- cv_score1;
+	update_segs();
 	return 0;
 }
 
 
 int main(int argc, char **argv)
 {
-	exec_python();
+//	exec_python();
 	
 	printf("initting game\n");
 	init_game();
 
 	while (1) {
-		update_segs();
+	//	update_segs();
 		op = read_xbee();
 
 		printf("op: %d\n", op);
@@ -157,7 +158,8 @@ int normal_mode(CORN_OP op) {
 }
 
 int init_game() {
-	
+cv_score0 = 0;
+cv_score1 = 0;
 	// Write zeroes to scoreboard
 	led_7seg_write_team(0, 0);
 	usleep(1000);
@@ -185,32 +187,42 @@ int process_hole(CORN_OP op) {
 	}
 	else if(op==HOLE_BREAK) {
 		if(check_for_hole0==1){
-			score0 = score0+3;
+			hole_score0 = hole_score0+3;
 			printf("TEAM0 hole break\n");
 			check_for_hole0=0;
 	}
 		
 		else if(check_for_hole1==1) {
-			score1 = score1+3;
+			hole_score1 = hole_score1+3;
 			printf("TEAM1 hole break\n");
 			check_for_hole1=0;
 		}
 	}	
 	
 
-//	if(update_score==1) {
-//		update_score=0;
-//		update_segs();
-//	}
 }
 
 void update_segs()
 {
-		printf("updating scores");
-		int dig1_team0 = score0/10;
-		int dig2_team0 = score0%10;
-		int dig1_team1 = score1/10;
-		int dig2_team1 = score1%10;
+		int temp_score0,temp_score1=0;
+		int round_net_score= net_cv_score + hole_score0 - hole_score1;
+		if(round_net_score>0)
+		{
+			temp_score0=round_net_score;
+			temp_score1 = 0;
+		}
+		else
+		{
+			temp_score1 = -1*round_net_score;
+			temp_score0 = 0;
+		
+		}
+
+		printf("net score: %d", round_net_score);
+		int dig1_team0 = temp_score0/10;
+		int dig2_team0 = temp_score0%10;
+		int dig1_team1 = temp_score1/10;
+		int dig2_team1 = temp_score1%10;
 	
 		led_7seg_write(0, dig1_team0);
 		led_7seg_write(1, dig2_team0);
@@ -255,6 +267,7 @@ void *team_sw_func() {
 					sleep(3);							//wait 3 sec for hole break, than check score
 
 
+					exec_python();
 					printf("team1 chance over, update score\n");
 					update_score=1;			
 					curr_team=0;
