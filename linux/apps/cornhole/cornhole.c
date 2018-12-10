@@ -79,7 +79,6 @@ int exec_python() {
 
 int main(int argc, char **argv)
 {
-//	exec_python();
 	
 	printf("initting game\n");
 	init_game();
