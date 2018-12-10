@@ -5,7 +5,8 @@
 #include "cornhole_types.h"
 #include "ece453.h"
 #include "xbee.h"
-
+#include <stdio.h>
+#include <stdlib.h>
 int led_7seg_write(int seg_num, int value);
 int led_7seg_read(int seg_num);
 int process_hole();
@@ -18,5 +19,5 @@ void *blink_func();
 int edit_mode(CORN_OP op);
 int normal_mode(CORN_OP op);
 void *team_sw_func();
-
+void update_segs();
 #endif

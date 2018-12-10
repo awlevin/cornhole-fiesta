@@ -20,9 +20,12 @@
 CORN_OP op;
 volatile uint8_t score0, score1, round_score0, round_score1; 
 volatile int curr_team = 0;
+volatile int check_for_hole0=0;
+volatile int check_for_hole1=0;
 volatile int turn_count=0;
 volatile int round_count=0;
 volatile int signal0,signal1=0;
+volatile int update_score=0;
 volatile CORN_MODE curr_mode = MODE_PLAY;	
 // Background thread for blinking a team's LED's when in edit mode
 pthread_t blink_thread;
@@ -36,7 +39,7 @@ int exec_python() {
 	int returnStatus;
 
 	argv[0] = "/usr/bin/python3";
-	argv[1] = "cornhole-fiesta/opencv/cvtest.py";
+	argv[1] = "pyscript.py";
 	argv[2] = NULL;
 
 	pid_t child_pid, wpid;
@@ -57,7 +60,18 @@ int exec_python() {
 		printf("error in child\n");
 		exit(1);
 	}
-	
+
+	FILE *fp;	
+	fp = fopen("cvData.txt","r");
+	if(fp==NULL) {
+		printf("file error");
+		return -1;
+	}
+
+	int team0_cv_score, team1_cv_score;
+	fscanf(fp, "%d %d", &team1_cv_score, &team0_cv_score);
+
+	printf("////////////\n team0 score: %d   team1 score: %d",team0_cv_score,team1_cv_score); 
 	return 0;
 }
 
@@ -70,6 +84,7 @@ int main(int argc, char **argv)
 	init_game();
 
 	while (1) {
+		update_segs();
 		op = read_xbee();
 
 		printf("op: %d\n", op);
@@ -169,49 +184,39 @@ int process_hole(CORN_OP op) {
 		signal1=1;
 	}
 	else if(op==HOLE_BREAK) {
-		if(curr_team==0){
-			score0 =score0+3;
-			printf("TEAM0 SCORES\n");
-			int dig1 = score0/10;
-			int dig2 = score0%10;
-			score0 = (score0 >= 22) ? 0  : score0;
-			led_7seg_write(0, dig1);
-			led_7seg_write(1, dig2);
-		}
+		if(check_for_hole0==1){
+			score0 = score0+3;
+			printf("TEAM0 hole break\n");
+			check_for_hole0=0;
+	}
 		
-		else if(curr_team==1) {
+		else if(check_for_hole1==1) {
 			score1 = score1+3;
-			printf("TEAM1 SCORES\n");
-			int dig1 = score1/10;
-			int dig2 = score1%10;
-			score1 = (score1 >= 22) ? 0 : score1;
-			led_7seg_write(2, dig1);
-			led_7seg_write(3, dig2);
+			printf("TEAM1 hole break\n");
+			check_for_hole1=0;
 		}
-/*		
-			if(round_score0>round_score1)
-			{
-				int dig1 =( score0+round_score0 -round_score1)/10;
-				int dig2 =( score0+round_score0 -round_score1)%10;
-				int dig3 = score1/10;
-				int dig4 = score1%10;
-			}
-			else
-			{
-				int dig1 = score0/10;
-				int dig2 = score0%10;
-				int dig3 = (score1 + round_score1 - round_score0)/10;
-				int dig4 =  (score1 + round_score1 - round_score0)%10;
-			}
-
-		led_7seg_write(0, dig1);
-		led_7seg_write(1, dig2);
-		led_7seg_write(2, dig2);
-		led_7seg_write(3, dig3);
-	*/
 	}	
-}
 	
+
+//	if(update_score==1) {
+//		update_score=0;
+//		update_segs();
+//	}
+}
+
+void update_segs()
+{
+		printf("updating scores");
+		int dig1_team0 = score0/10;
+		int dig2_team0 = score0%10;
+		int dig1_team1 = score1/10;
+		int dig2_team1 = score1%10;
+	
+		led_7seg_write(0, dig1_team0);
+		led_7seg_write(1, dig2_team0);
+		led_7seg_write(2, dig1_team1);
+		led_7seg_write(3, dig2_team1);
+}
 	
 void *team_sw_func() {
 	while(1)
@@ -220,45 +225,40 @@ void *team_sw_func() {
 			continue;
 		}
 		n_state = state;
+	check_for_hole0=0;
+	check_for_hole1=0;
 		switch(state)
 		{
 			case TEAM0:	
 				if(signal0 == 1) // when team0 steps on the footplate (signal0==1)
 				{
-					printf("TEAM0, SIGNAL1\n");
+					printf("team0 chance to score\n");
 					signal0=0;
-					sleep(3);
-					printf("TEAM0, SIGNAL1, POST SLEEP\n");
-	//				if(round_count<8)
-		//			{
-						curr_team=1;
-						n_state = TEAM1;
-		//			}
-		//			else
-		//			{
-		//				n_state = ROUNDOVER;
-		//				curr_team = 0;
-		//			}
+					signal1=0;
+					check_for_hole0=1;	
+					sleep(3);									//wait 3 sec for hole break, than check score
+
+					exec_python();
+					printf("TEAM0 chance over, update score\n");
+					curr_team=1;
+					n_state = TEAM1;
 				}
 				break;
 
 			case TEAM1:
 				if(signal1==1)
 				 {
-					printf("TEAM1, SIGNAL1\n");
+					printf("team1 chance to score\n");
 					signal1=0;
-					sleep(3);
-					printf("TEAM1, SIGNAL1, POST SLEEP\n");
-	//				if(round_count<8)
-		//			{
-						curr_team=0;
-						n_state = TEAM0;
-		//			}
-		//			else
-		//			{
-		//				n_state = ROUNDOVER;
-		//				curr_team=1;
-			//		
+					signal0=0;
+					check_for_hole1=1;
+					sleep(3);							//wait 3 sec for hole break, than check score
+
+
+					printf("team1 chance over, update score\n");
+					update_score=1;			
+					curr_team=0;
+					n_state = TEAM0;
 				}
 				break;
 		}
