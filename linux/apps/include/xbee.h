@@ -5,5 +5,6 @@
 #include "cornhole_types.h"
 
 CORN_OP read_xbee(); 
+int write_xbee(LED_COLOR color);
 
 #endif

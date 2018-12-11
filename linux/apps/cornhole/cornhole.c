@@ -79,9 +79,10 @@ int exec_python() {
 
 int main(int argc, char **argv)
 {
-	
+
 	printf("initting game\n");
 	init_game();
+	write_xbee(BLUE);
 
 	while (1) {
 	//	update_segs();

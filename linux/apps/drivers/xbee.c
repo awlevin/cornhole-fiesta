@@ -74,8 +74,6 @@ void set_mincount(int fd, int mcount)
 
 CORN_OP read_xbee() {
 	
-    int wlen;
-
     if (fd < 0) {
         printf("Error opening %s: %s\n", portname, strerror(errno));
         return -1;
@@ -99,4 +97,36 @@ CORN_OP read_xbee() {
         }
 
     } while (1);
+}
+
+int write_xbee(LED_COLOR color) {
+		
+		int writelen;
+	
+    if (fd < 0) {
+        printf("Error opening %s: %s\n", portname, strerror(errno));
+        return -1;
+    }
+    /*baudrate 115200, 8 bits, no parity, 1 stop bit */
+    set_interface_attribs(fd, B115200);
+		
+		unsigned char buf[2];
+		if (color == BLUE) {
+			buf[0] = '1';
+		} else if (color == RED) {
+			buf[0] = '0';
+		} else {
+			printf("ERROR: NOT A VALID COLOR");
+		}
+
+		buf[1] = '\0';
+
+		writelen = write(fd, buf, 2);
+		if (writelen > 0) {
+				printf("Write %d: \"%s\"\n", writelen, buf);
+				return atoi(buf);		
+		} else if (writelen < 0) {
+				printf("Error from read: %d: %s\n", writelen, strerror(errno));
+				return -1;
+		}
 }

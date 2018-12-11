@@ -7,4 +7,7 @@ typedef enum corn_op_t {TEAM1_HOLE, TEAM2_HOLE, PEDAL_SINGLE, PEDAL_DOUBLE, PEDA
 typedef enum corn_modes_t {MODE_EDIT, MODE_PLAY} CORN_MODE;
 
 typedef enum state_t {TEAM0, TEAM1, ROUNDOVER} TEAM_STATE;
+
+typedef enum led_color_t {RED=0, BLUE=1} LED_COLOR;
+
 #endif

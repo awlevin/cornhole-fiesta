@@ -13,6 +13,7 @@ int process_hole();
 int process_long();
 int open_xbee();
 int close_xbee();
+int write_xbee(LED_COLOR color);
 int led_7seg_write_team(int team_num, int score);
 int init_game();
 void *blink_func();
