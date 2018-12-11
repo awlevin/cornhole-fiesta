@@ -21,4 +21,5 @@ int edit_mode(CORN_OP op);
 int normal_mode(CORN_OP op);
 void *team_sw_func();
 void update_segs();
+void update_leds(LED_COLOR color);
 #endif

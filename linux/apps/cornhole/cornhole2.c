@@ -45,7 +45,7 @@ int exec_python() {
 	argv[2] = NULL;
 
 	pid_t child_pid, wpid;
-		child_pid = fork();
+	child_pid = fork();
 	if (child_pid == 0) {
 		// if child
 		printf("child starting\n");
