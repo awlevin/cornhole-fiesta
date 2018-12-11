@@ -19,6 +19,7 @@
 
 CORN_OP op;
 volatile int curr_team = 0;
+volatile int edit_team=0;
 volatile uint8_t score0, score1, hole_score0, hole_score1, cv_score0, cv_score1;
 volatile int  net_cv_score;
 volatile int check_for_hole0=0;
@@ -29,7 +30,7 @@ volatile int signal0,signal1=0;
 volatile int update_score=0;
 volatile CORN_MODE curr_mode = MODE_PLAY;	
 // Background thread for blinking a team's LED's when in edit mode
-int toscp=9;
+int toscp=0;
 pthread_t blink_thread;
 pthread_t team_sw_thread;
 TEAM_STATE state, n_state = TEAM0;
@@ -62,7 +63,7 @@ int exec_python() {
 		printf("error in child\n");
 		exit(1);
 	}
-
+/*
 	FILE *fp;	
 	fp = fopen("cvData.txt","r");
 	if(fp==NULL) {
@@ -73,6 +74,8 @@ int exec_python() {
 	fscanf(fp, "%d %d", &cv_score0, &cv_score1);
 	printf("/////\n team0 CVscore: %d\nteam1 CVscore: %d\n",cv_score0,cv_score1); 
 	net_cv_score= cv_score0- cv_score1;
+*/
+	net_cv_score=0;
 	update_segs();
 	return 0;
 }
@@ -109,19 +112,19 @@ int edit_mode(CORN_OP op) {
 	
 	switch(op) {
 		case TEAM1_HOLE:
-			curr_team=0;
+			edit_team=0;
 			break;
 		case	TEAM2_HOLE:
-			curr_team=1;
+			edit_team=1;
 			break;
 		case	PEDAL_SINGLE:
 			if(curr_team==0) score0++;
-			else if(curr_team==1)	score1++;
+			else if(edit_team==1)	score1++;
 			break;
 		case PEDAL_DOUBLE:
-			if(curr_team==0) (score0>0) ? score0-- : score0;
+			if(edit_team==0) (score0>0) ? score0-- : score0;
 
-			else if(curr_team==1)	(score1>0) ? score1-- : score1;
+			else if(edit_team==1)	(score1>0) ? score1-- : score1;
 			break;
 		case	PEDAL_LONG:
 			curr_mode^=1; // toggle mode
@@ -148,6 +151,7 @@ int normal_mode(CORN_OP op) {
 			break;
 		case PEDAL_LONG:
 			printf("LONG\n");
+			edit_team=curr_team;
 			curr_mode ^= 1;
 			break;
 		case HOLE_BREAK :
@@ -188,13 +192,13 @@ int process_hole(CORN_OP op) {
 	}
 	else if(op==HOLE_BREAK) {
 		if(check_for_hole0==1){
-			hole_score0 = hole_score0+3;
+			score0 = score0+3;
 			printf("TEAM0 hole break\n");
 			check_for_hole0=0;
 	}
 		
 		else if(check_for_hole1==1) {
-			hole_score1 = hole_score1+3;
+			score1 = score1+3;
 			printf("TEAM1 hole break\n");
 			check_for_hole1=0;
 		}
@@ -212,7 +216,7 @@ void update_leds(LED_COLOR color)
 void update_segs()
 {
 		int temp_score0,temp_score1=0;
-		int round_net_score= net_cv_score + hole_score0 - hole_score1;
+		int round_net_score= net_cv_score + score0 - score1;
 		if(round_net_score>0)
 		{
 			temp_score0=round_net_score;
@@ -231,7 +235,7 @@ void update_segs()
 		int dig1_team1 = temp_score1/10;
 		int dig2_team1 = temp_score1%10;
 	
-		score0=temp_score0;
+		score0 = temp_score0;
 		score1 = temp_score1;
 		led_7seg_write(0, dig1_team0);
 		led_7seg_write(1, dig2_team0);
@@ -304,7 +308,7 @@ void *blink_func() {
 		int dig2_team1 = score1%10;
 		int blink_rate = 500000;
 
-		if (curr_team == 0) {
+		if (edit_team == 0) {
 			led_7seg_write(0, 23);
 			led_7seg_write(1, 23);
 			usleep(blink_rate);
@@ -312,7 +316,7 @@ void *blink_func() {
 			led_7seg_write(1, dig2_team0);
 			usleep(blink_rate);
 		} 
-		else if (curr_team == 1) {
+		else if (edit_team == 1) {
 			led_7seg_write(2, 23);
 			led_7seg_write(3, 23);
 			usleep(blink_rate);
