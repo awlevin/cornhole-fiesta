@@ -36,7 +36,52 @@ TEAM_STATE state, n_state = TEAM0;
 //*****************************************************************************
 //*****************************************************************************
 
-int exec_python() {
+// NOTE: this method uses blocking
+int count_bags_python_script() {
+	char *argv[2];
+	int returnStatus;
+
+	argv[0] = "/usr/bin/python3";
+	argv[1] = "count-bags.py";
+	argv[2] = NULL;
+
+	pid_t child_pid, wpid;
+	child_pid = fork();
+	if (child_pid == 0) {
+		// if child
+		printf("starting python init script\n");
+		execvp(argv[0],argv);
+		printf("should never get here\n");
+	} 
+
+	// wait for child
+	printf("waiting for count-bags.py to terminate (count-bags.py pid: %d)\n", child_pid);
+	waitpid(child_pid, &returnStatus, 0);
+	printf("count-bags.py done executing, returnCode: %d\n", returnStatus);
+
+	if (returnStatus < 0) {
+		printf("Error in count-bags.py\n");
+		exit(1);
+	}
+
+	FILE *fp;	
+	fp = fopen("bag_counts.data","r");
+	if(fp==NULL) {
+		fprintf(stderr, "Error reading bag_counts.data\n");
+		return -1;
+	}
+//	int team0_cv_score, team1_cv_score;
+	fscanf(fp, "%d %d", &cv_score0, &cv_score1);
+	printf("/////\n team0 CVscore: %d\nteam1 CVscore: %d\n",cv_score0,cv_score1); 
+	net_cv_score= cv_score0 - cv_score1;
+	update_segs();
+
+	return 0;
+}
+
+// This method will call the python init script, which gets a mask of the board and hole to help the other python script isolate bags later on
+// NOTE: this method uses blocking
+int init_cv() {
 	char *argv[2];
 	int returnStatus;
 
@@ -58,32 +103,21 @@ int exec_python() {
 	waitpid(child_pid, &returnStatus, 0);
 	printf("python init script done executing, returnCode: %d\n", returnStatus);
 
-	if (returnStatus < 0) {
+	if (returnStatus != 0) {
 		printf("Error in python init script\n");
 		exit(1);
 	}
 
-	FILE *fp;	
-	fp = fopen("bag_counts.data","r");
-	if(fp==NULL) {
-		printf("file error");
-		return -1;
-	}
-//	int team0_cv_score, team1_cv_score;
-	fscanf(fp, "%d %d", &cv_score0, &cv_score1);
-	printf("/////\n team0 CVscore: %d\nteam1 CVscore: %d\n",cv_score0,cv_score1); 
-	net_cv_score= cv_score0- cv_score1;
-	update_segs();
 	return 0;
 }
+
 
 int main(int argc, char **argv)
 {
 
 	printf("initting game\n");
 	init_game();
-//	write_xbee(BLUE);
-
+	
 	while (1) {
 	//	update_segs();
 		op = read_xbee();
@@ -165,6 +199,8 @@ int init_game() {
 	led_7seg_write_team(0, 0);
 	usleep(1000);
 	led_7seg_write_team(1, 0);
+
+	init_cv();
 		
 	// Turn on thread to handle blinking during edit mode
 	pthread_create( &blink_thread, NULL, blink_func, NULL);
@@ -259,7 +295,7 @@ void *team_sw_func() {
 					check_for_hole0=1;	
 					sleep(3);									//wait 3 sec for hole break, than check score
 
-					exec_python();
+					count_bags_python_script();
 					printf("\nTEAM0 chance over, update score\n");
 					curr_team=1;
 					update_leds(BLUE);
@@ -276,7 +312,7 @@ void *team_sw_func() {
 					check_for_hole1=1;
 					sleep(3);							//wait 3 sec for hole break, than check score
 
-					exec_python();
+					count_bags_python_script();
 					printf("team1 chance over, update score\n");
 					update_score=1;			
 					curr_team=0;
