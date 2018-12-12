@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import numpy as np
 import cv2 as cv
 import sys
@@ -171,5 +168,9 @@ for bag_mask in bag_masks: # returns BGR instead of RGB
         
 print("num_red: ", num_red)
 print("num_black: ", num_black)
+
+# Write bag counts to data file
+with open('bag_counts.data', 'w') as f:
+    f.write(str(num_red) + ' ' + str(num_black))
 
 sys.exit(0)

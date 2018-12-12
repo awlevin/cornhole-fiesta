@@ -41,30 +41,30 @@ int exec_python() {
 	int returnStatus;
 
 	argv[0] = "/usr/bin/python3";
-	argv[1] = "pyscript.py";
+	argv[1] = "init.py";
 	argv[2] = NULL;
 
 	pid_t child_pid, wpid;
 		child_pid = fork();
 	if (child_pid == 0) {
 		// if child
-		printf("child starting\n");
+		printf("starting python init script\n");
 		execvp(argv[0],argv);
 		printf("should never get here\n");
 	} 
 
 	// wait for child
-	printf("parent waiting, child_pid: %d\n", child_pid);
+	printf("waiting for python init script to terminate (init script pid: %d)\n", child_pid);
 	waitpid(child_pid, &returnStatus, 0);
-	printf("parent done waiting... returnStatus: %d\n", returnStatus);
+	printf("python init script done executing, returnCode: %d\n", returnStatus);
 
 	if (returnStatus < 0) {
-		printf("error in child\n");
+		printf("Error in python init script\n");
 		exit(1);
 	}
 
 	FILE *fp;	
-	fp = fopen("cvData.txt","r");
+	fp = fopen("bag_counts.data","r");
 	if(fp==NULL) {
 		printf("file error");
 		return -1;
@@ -76,7 +76,6 @@ int exec_python() {
 	update_segs();
 	return 0;
 }
-
 
 int main(int argc, char **argv)
 {
@@ -159,8 +158,9 @@ int normal_mode(CORN_OP op) {
 }
 
 int init_game() {
-cv_score0 = 0;
-cv_score1 = 0;
+	cv_score0 = 0;
+	cv_score1 = 0;
+
 	// Write zeroes to scoreboard
 	led_7seg_write_team(0, 0);
 	usleep(1000);
@@ -178,7 +178,7 @@ cv_score1 = 0;
 
 
 int process_hole(CORN_OP op) {
-//	int dig1,dig2,dig3,dig4;
+//	int dig1,dig2,dig3,`dig4;
 	
 	if(op==TEAM1_HOLE) {
 		signal0=1;	
@@ -205,7 +205,6 @@ int process_hole(CORN_OP op) {
 
 void update_leds(LED_COLOR color)
 {
-
 	write_xbee(color);
 }
 
@@ -222,7 +221,6 @@ void update_segs()
 		{
 			temp_score1 = -1*round_net_score;
 			temp_score0 = 0;
-		
 		}
 
 		printf("net score: %d", round_net_score);
@@ -245,9 +243,11 @@ void *team_sw_func() {
 		if(curr_mode==MODE_EDIT) {
 			continue;
 		}
+		
 		n_state = state;
-	check_for_hole0=0;
-	check_for_hole1=0;
+		check_for_hole0=0;
+		check_for_hole1=0;
+		
 		switch(state)
 		{
 			case TEAM0:	
@@ -275,7 +275,6 @@ void *team_sw_func() {
 					signal0=0;
 					check_for_hole1=1;
 					sleep(3);							//wait 3 sec for hole break, than check score
-
 
 					exec_python();
 					printf("team1 chance over, update score\n");
