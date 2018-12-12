@@ -18,6 +18,7 @@
 #define DEBUG_ON
 
 CORN_OP op;
+////////////////Global variables/////////////////////////////////////
 volatile int curr_team = 0;
 volatile int edit_team=0;
 volatile uint8_t score0, score1, hole_score0, hole_score1, cv_score0, cv_score1;
@@ -29,14 +30,19 @@ volatile int round_count=0;
 volatile int signal0,signal1=0;
 volatile int update_score=0;
 volatile CORN_MODE curr_mode = MODE_PLAY;	
+/////////////////////////////////////////////////////////////////////
 // Background thread for blinking a team's LED's when in edit mode
-int toscp=0;
 pthread_t blink_thread;
+//Background thread for switching teams
 pthread_t team_sw_thread;
 TEAM_STATE state, n_state = TEAM0;
 //*****************************************************************************
 //*****************************************************************************
 
+
+/* Function call to python script to run CV
+*  CV analyzes board and stores to file cvData.txt that this method read from
+*/
 int exec_python() {
 	char *argv[2];
 	int returnStatus;
@@ -46,7 +52,7 @@ int exec_python() {
 	argv[2] = NULL;
 
 	pid_t child_pid, wpid;
-		child_pid = fork();
+	child_pid = fork();
 	if (child_pid == 0) {
 		// if child
 		printf("child starting\n");
@@ -54,27 +60,26 @@ int exec_python() {
 		printf("should never get here\n");
 	} 
 
-	// wait for child
+		// wait for child
 	printf("parent waiting, child_pid: %d\n", child_pid);
 	waitpid(child_pid, &returnStatus, 0);
 	printf("parent done waiting... returnStatus: %d\n", returnStatus);
 
-	if (returnStatus < 0) {
-		printf("error in child\n");
-		exit(1);
-	}
-/*
+		if (returnStatus < 0) {
+			printf("error in child\n");
+			exit(1);
+		}
+	/*
 	FILE *fp;	
 	fp = fopen("cvData.txt","r");
 	if(fp==NULL) {
-		printf("file error");
-		return -1;
+	printf("file error");
+	return -1;
 	}
-//	int team0_cv_score, team1_cv_score;
 	fscanf(fp, "%d %d", &cv_score0, &cv_score1);
 	printf("/////\n team0 CVscore: %d\nteam1 CVscore: %d\n",cv_score0,cv_score1); 
 	net_cv_score= cv_score0- cv_score1;
-*/
+	*/
 	net_cv_score=0;
 	update_segs();
 	return 0;
@@ -85,12 +90,10 @@ int main(int argc, char **argv)
 {
 
 	printf("initting game\n");
-	init_game();
-//	write_xbee(BLUE);
+	init_game();			//set necessary settings and conditions to start game
 
 	while (1) {
-	//	update_segs();
-		op = read_xbee();
+		op = read_xbee();			//waits for signal from MCU and processes data
 
 		printf("op: %d\n", op);
 	
@@ -101,60 +104,61 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// Need to close xbee somewhere, program wont reach here but we'll leave it here anyways for now
 	close_xbee();
 	
   return 0;
 }
 
-// Handle operations in edit mode
+// Handle operations in edit mode to manually increment and decrement scores
 int edit_mode(CORN_OP op) {
 	
 	switch(op) {
-		case TEAM1_HOLE:
+		case TEAM1_HOLE:		//Footplate 0 pressed detected
 			edit_team=0;
 			break;
-		case	TEAM2_HOLE:
+		case	TEAM2_HOLE:		//Footplate 1 pressed detected
 			edit_team=1;
 			break;
-		case	PEDAL_SINGLE:
-			if(curr_team==0) score0++;
+		case	PEDAL_SINGLE:			//Single footpedal press detected
+			if(edit_team==0) score0++;
 			else if(edit_team==1)	score1++;
 			break;
-		case PEDAL_DOUBLE:
+		case PEDAL_DOUBLE:				//Double footpedal press detected
 			if(edit_team==0) (score0>0) ? score0-- : score0;
 
 			else if(edit_team==1)	(score1>0) ? score1-- : score1;
 			break;
-		case	PEDAL_LONG:
+		case	PEDAL_LONG:					//Long Footpedal press detected
 			curr_mode^=1; // toggle mode
 			break;
 	}
 }
 
-// Handle operations in normal mode
+/* Handle operations in normal mode to update scoring automatically
+*	And Switch teams
+*/
 int normal_mode(CORN_OP op) {
 	switch(op) {
-		case TEAM1_HOLE:
+		case TEAM1_HOLE:						//Footplate 0 press detected
 			printf("TEAM1\n");
 			process_hole(op);
 			break;
-		case TEAM2_HOLE:
+		case TEAM2_HOLE:						//Footplate 1 press detected
 			printf("TEAM2\n");
 			process_hole(op);
 			break;
-		case PEDAL_SINGLE:
+		case PEDAL_SINGLE:					//Single Footpedal press detected
 			printf("SNGLE\n");
 			break;
-		case PEDAL_DOUBLE:
+		case PEDAL_DOUBLE:					//Double footpedal press detected
 			printf("DOUBL\n");
 			break;
-		case PEDAL_LONG:
+		case PEDAL_LONG:						//Long footpedal press detected
 			printf("LONG\n");
 			edit_team=curr_team;
 			curr_mode ^= 1;
 			break;
-		case HOLE_BREAK :
+		case HOLE_BREAK :					//hole break detected
 			process_hole(op);
 		default: 
 			printf("%d", op);
@@ -181,6 +185,10 @@ cv_score1 = 0;
 }
 
 
+
+/*
+*	Inputs that will change teams and change the socre
+*/
 int process_hole(CORN_OP op) {
 //	int dig1,dig2,dig3,dig4;
 	
@@ -190,7 +198,7 @@ int process_hole(CORN_OP op) {
 	else if(op==TEAM2_HOLE) {
 		signal1=1;
 	}
-	else if(op==HOLE_BREAK) {
+	else if(op==HOLE_BREAK) {			//only if hole break was during window of scoring
 		if(check_for_hole0==1){
 			score0 = score0+3;
 			printf("TEAM0 hole break\n");
@@ -207,12 +215,19 @@ int process_hole(CORN_OP op) {
 
 }
 
+/*
+*  Send Code to Mcu to change LED colors
+*/
 void update_leds(LED_COLOR color)
 {
 
 	write_xbee(color);
 }
 
+/*
+*  updates segments after new scoring updates
+*  Scoring in cornhole is differntial
+*/
 void update_segs()
 {
 		int temp_score0,temp_score1=0;
@@ -242,7 +257,10 @@ void update_segs()
 		led_7seg_write(2, dig1_team1);
 		led_7seg_write(3, dig2_team1);
 }
-	
+
+/*
+*Thread running to switch teams and open up scoring windows  
+*/	
 void *team_sw_func() {
 	while(1)
 	{
@@ -260,10 +278,10 @@ void *team_sw_func() {
 					printf("team0 chance to score\n");
 					signal0=0;
 					signal1=0;
-					check_for_hole0=1;	
+					check_for_hole0=1;				//while this is asserted, a hole break will give team 0 +3
 					sleep(3);									//wait 3 sec for hole break, than check score
 
-					exec_python();
+					exec_python();					//call Python function to input CV
 					printf("\nTEAM0 chance over, update score\n");
 					curr_team=1;
 					update_leds(BLUE);
@@ -277,11 +295,11 @@ void *team_sw_func() {
 					printf("team1 chance to score\n");
 					signal1=0;
 					signal0=0;
-					check_for_hole1=1;
+					check_for_hole1=1;			//while this is asserted, a hole break will give team 0 +3
 					sleep(3);							//wait 3 sec for hole break, than check score
 
 
-					exec_python();
+					exec_python();		//call Python function to input CV
 					printf("team1 chance over, update score\n");
 					update_score=1;			
 					curr_team=0;
@@ -294,7 +312,9 @@ void *team_sw_func() {
 	}
 }		
 
-
+/*
+*
+*/
 void *blink_func() {		
 	while(1) {
 
