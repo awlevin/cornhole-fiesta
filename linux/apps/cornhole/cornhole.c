@@ -253,8 +253,11 @@ void update_segs()
 		score0 = temp_score0;
 		score1 = temp_score1;
 		led_7seg_write(0, dig1_team0);
+		usleep(1000);
 		led_7seg_write(1, dig2_team0);
+		usleep(1000);
 		led_7seg_write(2, dig1_team1);
+		usleep(1000);
 		led_7seg_write(3, dig2_team1);
 }
 
@@ -330,17 +333,22 @@ void *blink_func() {
 
 		if (edit_team == 0) {
 			led_7seg_write(0, 23);
+			usleep(1000);
 			led_7seg_write(1, 23);
 			usleep(blink_rate);
 			led_7seg_write(0, dig1_team0);
+			usleep(1000);
 			led_7seg_write(1, dig2_team0);
 			usleep(blink_rate);
 		} 
 		else if (edit_team == 1) {
 			led_7seg_write(2, 23);
+			usleep(1000);
 			led_7seg_write(3, 23);
+			usleep(1000);
 			usleep(blink_rate);
 			led_7seg_write(2, dig1_team1);
+			usleep(1000);
 			led_7seg_write(3, dig2_team1);
 			usleep(blink_rate);
 		}
@@ -354,11 +362,15 @@ int led_7seg_write_team(int team_num, int score) {
 
 	if (team_num == 0) {
 		led_7seg_write(0, dig1);
+		usleep(1000);
 		led_7seg_write(1, dig2);
+		usleep(1000);
 	}
 	else if (team_num == 1) {
 		led_7seg_write(2, dig1);
+		usleep(1000);
 		led_7seg_write(3, dig2);
+		usleep(1000);
 	} else {
 		return -1;
 	}
