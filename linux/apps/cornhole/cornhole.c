@@ -37,6 +37,10 @@ TEAM_STATE state, n_state = TEAM0;
 //*****************************************************************************
 
 // NOTE: this method uses blocking
+/*
+*		Will take picture of the board and use CV to calcualte the bags on the board through
+*   A Python sctipt
+*/
 int count_bags_python_script() {
 	char *argv[2];
 	int returnStatus;
@@ -70,7 +74,9 @@ int count_bags_python_script() {
 		fprintf(stderr, "Error reading bag_counts.data\n");
 		return -1;
 	}
-//	int team0_cv_score, team1_cv_score;
+
+	// Scan in the file that CV wrote to and caluclate the net score
+	// on the  board
 	fscanf(fp, "%d %d", &cv_score0, &cv_score1);
 	printf("/////\n team0 CVscore: %d\nteam1 CVscore: %d\n",cv_score0,cv_score1); 
 	net_cv_score= cv_score0 - cv_score1;
@@ -112,6 +118,11 @@ int init_cv() {
 }
 
 
+
+/*
+*	Main method that will read signlals from the MCU and process them into
+* game logic depending on which mode the game is in
+*/
 int main(int argc, char **argv)
 {
 
@@ -138,6 +149,10 @@ int main(int argc, char **argv)
 }
 
 // Handle operations in edit mode
+/*
+*	When in edit mode, a plate press will switch sides
+* And pedal presses will increment and decrement the scores
+*/
 int edit_mode(CORN_OP op) {
 	
 	switch(op) {
@@ -147,11 +162,11 @@ int edit_mode(CORN_OP op) {
 		case	TEAM2_HOLE:
 			curr_team=1;
 			break;
-		case	PEDAL_SINGLE:
+		case	PEDAL_SINGLE:			//single pedal to increment the score
 			if(curr_team==0) score0++;
 			else if(curr_team==1)	score1++;
 			break;
-		case PEDAL_DOUBLE:
+		case PEDAL_DOUBLE:		// Double pedal to decrement the score
 			if(curr_team==0) (score0>0) ? score0-- : score0;
 
 			else if(curr_team==1)	(score1>0) ? score1-- : score1;
@@ -212,7 +227,12 @@ int init_game() {
 	open_xbee();
 }
 
-
+/*
+*	processing signals to and from the team switching FSM\
+* signal0 will start a 3 second window for scoring Team 0
+* Signal1 will start a 3 second window for scoring Team 1
+* if check_for_hole_x is asserted and a hole break is registered, team X scores 3 points
+*/
 int process_hole(CORN_OP op) {
 //	int dig1,dig2,dig3,`dig4;
 	
@@ -239,11 +259,17 @@ int process_hole(CORN_OP op) {
 
 }
 
+/*
+* Send a code to the MCU to switch LED colors
+*/
 void update_leds(LED_COLOR color)
 {
 	write_xbee(color);
 }
 
+/*
+*	Will calculate the new net score and write to the 7segs
+*/
 void update_segs()
 {
 		int temp_score0,temp_score1=0;
@@ -273,6 +299,10 @@ void update_segs()
 		led_7seg_write(3, dig2_team1);
 }
 	
+/*
+* Thread that continuosly run to determine who's turn it is
+* and when to call for scoring updates. Only runs when in Play Mode
+*/
 void *team_sw_func() {
 	while(1)
 	{
@@ -324,7 +354,10 @@ void *team_sw_func() {
 			state = n_state;
 	}
 }		
-
+/*
+* When in Edit mode, thread wil blink the 7segs of the team that is being edited
+* 
+*/
 
 void *blink_func() {		
 	while(1) {
