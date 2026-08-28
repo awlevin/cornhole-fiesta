@@ -1,2 +1,9 @@
 .DS_Store
 web/node_modules/*
+
+# jupyter writes these beside every notebook
+.ipynb_checkpoints/
+
+# python bytecode
+__pycache__/
+*.pyc
